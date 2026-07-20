@@ -2,7 +2,7 @@
 
 **Universidad Central del Ecuador**  
 **Estudiante:** David Malquin ([@DavCoder22](https://github.com/DavCoder22))  
-**Materia:** Estrategia y Gestión de Servicios de TI  
+**Materia:** ESTRATEGIA, GESTIÓN Y ADQUISICIÓN EN LOS SISTEMAS  
 
 ---
 
@@ -89,7 +89,7 @@ El sistema utiliza **inteligencia artificial** para clasificar automáticamente 
 
 ## Cobertura del Trabajo
 
-Este proyecto cubre los siguientes aspectos de la materia **Estrategia y Gestión de Servicios de TI**:
+Este proyecto cubre los siguientes aspectos de la materia **ESTRATEGIA, GESTIÓN Y ADQUISICIÓN EN LOS SISTEMAS**:
 
 1. **ITIL — Gestión de Incidentes**
    - Ciclo de vida completo del incidente (detección, registro, clasificación, diagnóstico, resolución, cierre)

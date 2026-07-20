@@ -6,11 +6,11 @@
 
 **Facultad:** Ciencias Exactas  
 **Carrera:** Sistemas de la Información  
-**Materia:** Estrategia y Gestión de Servicios de TI
+**Materia:** ESTRATEGIA, GESTIÓN Y ADQUISICIÓN EN LOS SISTEMAS
 
 **Autor:** David Malquin  
 **Tutor:** Ing. Mauro Rosas  
-**Fecha:** Julio 2026
+**Fecha:** 20 de Julio de 2026
 
 ---
 
@@ -465,7 +465,7 @@ La automatización de la clasificación reduce el tiempo de procesamiento inicia
 
 ---
 
-*Documento generado para la materia de Estrategia y Gestión de Servicios de TI*  
+*Documento generado para la materia de ESTRATEGIA, GESTIÓN Y ADQUISICIÓN EN LOS SISTEMAS*  
 *Facultad de Ciencias Exactas — Carrera de Sistemas de la Información*  
-*Universidad Central del Ecuador — Julio 2026*  
+*Universidad Central del Ecuador — 20 de Julio de 2026*  
 *Autor: David Malquin — Tutor: Ing. Mauro Rosas*
