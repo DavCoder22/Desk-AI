@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: incident-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgres://50006eeda7ec943276ab655b58c3c1cb20cae03c628df533edf6eb7c5222d88c:sk_s4pV0Ddwcncn0TYV9fTxH@pooled.db.prisma.io:5432/postgres?sslmode=require"
+      RUN_SEED: "true"
+
+  frontend:
+    build: ./frontend
+    container_name: incident-frontend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:3000
+    depends_on:
+      - backend

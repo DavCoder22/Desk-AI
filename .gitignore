@@ -1,0 +1,19 @@
+node_modules/
+dist/
+.next/
+.env
+.env.local
+*.log
+*.err
+*.tsbuildinfo
+next-env.d.ts
+coverage/
+
+# API keys de IA - NUNCA subir al repositorio
+backend/ai-config.json
+
+# Prisma
+backend/prisma/generated/
+
+# Proyecto separado (no parte de DeskAI)
+my-app/

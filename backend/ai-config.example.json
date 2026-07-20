@@ -1,0 +1,5 @@
+{
+  "apiKey": "tu-api-key-aqui",
+  "model": "qwen/qwen-2.5-32b-instruct",
+  "apiUrl": "https://openrouter.ai/api/v1/chat/completions"
+}

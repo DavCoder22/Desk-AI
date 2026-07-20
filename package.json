@@ -1,0 +1,17 @@
+{
+  "name": "deskai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DeskAI - Sistema de Gestión de Incidentes Inteligente (ITIL + IA + COBIT)",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "start:backend": "cd backend && npm run start:prod",
+    "start:frontend": "cd frontend && npm run start",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "deploy": "powershell -File deploy.ps1 -Mode all"
+  }
+}
