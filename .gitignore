@@ -83,5 +83,17 @@ backend/ai-config.json
 
 # Docs/screenshots are allowed (keep them tracked)
 
+# Error logs
+*.err
+
+# Next.js generated
+frontend/next-env.d.ts
+
+# Screenshots (use docs/screenshots/ instead)
+captura*.png
+
+# Duplicate render schema (use backend/prisma/render-schema.prisma)
+backend/render-schema.prisma
+
 # Project leftovers
 my-app/
