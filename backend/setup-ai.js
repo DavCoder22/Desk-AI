@@ -31,11 +31,21 @@ function ask(q) {
 function detectProvider(apiKey) {
   const key = apiKey.trim();
 
+  // DeepSeek directo (sk-... en api.deepseek.com)
+  if (key.startsWith('sk-') && key.length > 20) {
+    // Heurística: si el usuario indica DeepSeek o usamos OpenRouter por defecto
+    return {
+      provider: 'DeepSeek (OpenRouter)',
+      apiUrl: 'https://openrouter.ai/api/v1/chat/completions',
+      model: 'poolside/laguna-s-2.1:free',
+    };
+  }
+
   if (key.startsWith('sk-or-v1-')) {
     return {
       provider: 'OpenRouter',
       apiUrl: 'https://openrouter.ai/api/v1/chat/completions',
-      model: 'qwen/qwen-2.5-32b-instruct',
+      model: 'poolside/laguna-s-2.1:free',
     };
   }
 
@@ -43,7 +53,7 @@ function detectProvider(apiKey) {
     return {
       provider: 'Groq',
       apiUrl: 'https://api.groq.com/openai/v1/chat/completions',
-      model: 'qwen/qwen3.6-27b',
+      model: 'deepseek-r1-distill-llama-70b',
     };
   }
 
@@ -58,7 +68,7 @@ function detectProvider(apiKey) {
   return {
     provider: 'OpenRouter (auto-detected)',
     apiUrl: 'https://openrouter.ai/api/v1/chat/completions',
-    model: 'qwen/qwen-2.5-32b-instruct',
+    model: 'poolside/laguna-s-2.1:free',
   };
 }
 
@@ -108,7 +118,7 @@ async function testConnection(config) {
       'Authorization': `Bearer ${config.apiKey}`,
     };
     if (config.apiUrl.includes('openrouter')) {
-      headers['HTTP-Referer'] = 'https://github.com/incident-manager';
+      headers['HTTP-Referer'] = 'https://github.com/DavCoder22/Desk-AI';
       headers['X-Title'] = 'DeskAI';
     }
 
@@ -149,7 +159,7 @@ async function getValidConfig(showTitle) {
     console.log('└─────────────────────────────────────────────┘');
     console.log('');
     console.log('Proveedores detectables:');
-    console.log('  sk-or-v1-...  OpenRouter (Qwen recomendado)');
+    console.log('  sk-or-v1-...  OpenRouter (poolside/laguna-s-2.1:free)');
     console.log('  gsk_......... Groq');
     console.log('  sk-.......... OpenAI');
     console.log('');

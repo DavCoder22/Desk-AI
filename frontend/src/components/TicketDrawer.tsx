@@ -55,6 +55,7 @@ const priorityBadge: Record<string, string> = {
 };
 
 const transitions: Record<string, { label: string; nextStatus: string; color: string }[]> = {
+  PENDIENTE_CLASIFICACION: [{ label: 'Clasificar y Abrir', nextStatus: 'ABIERTO', color: 'bg-blue-600 hover:bg-blue-700' }],
   ABIERTO: [{ label: 'Iniciar Progreso', nextStatus: 'EN_PROGRESO', color: 'bg-indigo-600 hover:bg-indigo-700' }],
   EN_PROGRESO: [{ label: 'Resolver', nextStatus: 'RESUELTO', color: 'bg-green-600 hover:bg-green-700' }],
   RESUELTO: [{ label: 'Cerrar Ticket', nextStatus: 'CERRADO', color: 'bg-gray-600 hover:bg-gray-700' }],

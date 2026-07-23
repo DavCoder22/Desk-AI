@@ -4,6 +4,6 @@ import { TicketStatus } from '../enums';
 export class UpdateStatusDto {
   @IsString()
   @IsNotEmpty()
-  @IsIn([TicketStatus.EN_PROGRESO, TicketStatus.RESUELTO, TicketStatus.CERRADO])
+  @IsIn([TicketStatus.ABIERTO, TicketStatus.EN_PROGRESO, TicketStatus.RESUELTO, TicketStatus.CERRADO])
   status: string;
 }

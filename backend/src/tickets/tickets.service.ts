@@ -1,6 +1,5 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
 import { TicketStatus, Priority, Urgency, Impact, Category } from './enums';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
@@ -8,59 +7,76 @@ import { AIService } from '../ai/ai.service';
 
 @Injectable()
 export class TicketsService {
+  private readonly logger = new Logger(TicketsService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AIService,
   ) {}
 
   async createWithAIClassification(dto: CreateTicketDto) {
+    this.logger.log(`Creando ticket: title=${dto.title}, requester=${dto.requester}`);
+
+    const newTicketData: any = {
+      title: dto.title,
+      description: dto.description,
+      category: dto.category || Category.OTROS,
+      subcategoria: dto.subcategoria || null,
+      tipo_solicitud: dto.tipo_solicitud || null,
+      tipo_usuario: dto.tipo_usuario || 'ESTUDIANTE',
+      facultad_o_area: dto.facultad_o_area || null,
+      carrera: dto.carrera || null,
+      requester: dto.requester,
+      status: TicketStatus.PENDIENTE_CLASIFICACION,
+      priority: Priority.MEDIO,
+      urgency: Urgency.MEDIO,
+      impact: Impact.MEDIO,
+    };
+
+    this.logger.debug(`Datos iniciales: ${JSON.stringify(newTicketData)}`);
+
     return this.prisma.$transaction(async (tx) => {
-      const ticket = await tx.ticket.create({
-        data: {
+      const ticket = await tx.ticket.create({ data: newTicketData });
+      this.logger.log(`Ticket creado con ID: ${ticket.id}`);
+
+      let aiResult: { category: string; subcategoria: string | null; tipo_solicitud: string | null; priority: string; urgency: string; impact: string; suggestion: string | null; user_recommendation: string | null; supervisor_suggestion: string | null; itil_category: string | null; cobit_control: string | null; } | undefined;
+
+      try {
+        aiResult = await this.aiService.classify({
           title: dto.title,
           description: dto.description,
-          category: dto.category || 'PENDIENTE',
-          tipo_usuario: dto.tipo_usuario || 'ESTUDIANTE',
-          facultad_o_area: dto.facultad_o_area || null,
-          carrera: dto.carrera || null,
-          requester: dto.requester,
-          status: TicketStatus.PENDIENTE_CLASIFICACION,
-          priority: Priority.MEDIO,
-          urgency: Urgency.MEDIO,
-          impact: Impact.MEDIO,
-        },
-      });
+          tipo_usuario: dto.tipo_usuario,
+          facultad_o_area: dto.facultad_o_area,
+        });
+        this.logger.log(`Clasificacion IA: ${JSON.stringify(aiResult)}`);
+      } catch (err: any) {
+        this.logger.error(`Error en clasificacion IA: ${err.message}`);
+      }
 
-      const aiResult = await this.aiService.classify({
-        title: dto.title,
-        description: dto.description,
-        tipo_usuario: dto.tipo_usuario,
-        facultad_o_area: dto.facultad_o_area,
-      });
+      const updateData: any = { status: TicketStatus.ABIERTO };
+      if (aiResult) {
+        updateData.category = aiResult.category;
+        updateData.subcategoria = aiResult.subcategoria || dto.subcategoria || null;
+        updateData.tipo_solicitud = aiResult.tipo_solicitud || dto.tipo_solicitud || null;
+        updateData.priority = aiResult.priority;
+        updateData.urgency = aiResult.urgency;
+        updateData.impact = aiResult.impact;
+        updateData.ai_suggestion = aiResult.suggestion;
+        updateData.user_recommendation = aiResult.user_recommendation || null;
+        updateData.supervisor_suggestion = aiResult.supervisor_suggestion || null;
+        updateData.itil_category = aiResult.itil_category || null;
+        updateData.cobit_control = aiResult.cobit_control || null;
+      }
 
       const updatedTicket = await tx.ticket.update({
         where: { id: ticket.id },
-        data: {
-          category: aiResult.category,
-          subcategoria: aiResult.subcategoria || dto.subcategoria || null,
-          tipo_solicitud: aiResult.tipo_solicitud || dto.tipo_solicitud || null,
-          priority: aiResult.priority,
-          urgency: aiResult.urgency,
-          impact: aiResult.impact,
-          ai_suggestion: aiResult.suggestion,
-          user_recommendation: aiResult.user_recommendation || null,
-          supervisor_suggestion: aiResult.supervisor_suggestion || null,
-          itil_category: aiResult.itil_category || null,
-          cobit_control: aiResult.cobit_control || null,
-          status: TicketStatus.ABIERTO,
-        },
+        data: updateData,
       });
 
       await tx.auditLog.create({
         data: {
           ticket_id: updatedTicket.id,
           action: 'CREACION',
-          details: { resultado_IA: aiResult } as any,
+          details: { resultado_IA: aiResult },
         },
       });
 
@@ -78,6 +94,7 @@ export class TicketsService {
     }
     const options: any = { orderBy: order };
     if (limit) options.take = limit;
+    this.logger.debug(`findAll con limit=${limit} sortBy=${sortBy}`);
     return this.prisma.ticket.findMany(options);
   }
 
@@ -92,41 +109,55 @@ export class TicketsService {
     const newStatus = dto.status;
 
     const validTransitions: Record<string, string[]> = {
+      [TicketStatus.PENDIENTE_CLASIFICACION]: [TicketStatus.ABIERTO],
       [TicketStatus.ABIERTO]: [TicketStatus.EN_PROGRESO],
       [TicketStatus.EN_PROGRESO]: [TicketStatus.RESUELTO],
       [TicketStatus.RESUELTO]: [TicketStatus.CERRADO],
     };
 
     const allowed = validTransitions[ticket.status] || [];
-    if (!allowed.includes(newStatus)) {
+
+    if (!allowed.includes(newStatus) && ticket.status !== newStatus) {
       throw new BadRequestException(
-        `Transicion invalida de ${ticket.status} a ${newStatus}`,
+        `Transicion no valida de ${ticket.status} a ${newStatus}`,
       );
     }
 
     const updateData: any = { status: newStatus };
-
     if (newStatus === TicketStatus.RESUELTO) {
-      const resolved_at = new Date();
-      const diffMs = resolved_at.getTime() - ticket.created_at.getTime();
-      const resolution_time_minutes = Math.floor(diffMs / 60000);
-      Object.assign(updateData, {
-        resolved_at,
-        resolution_time_minutes,
-        cost_human: parseFloat(((resolution_time_minutes / 60) * 15).toFixed(2)),
-        cost_ia: 0.05,
-      });
+      updateData.resolved_at = new Date();
+      const diffMs = new Date().getTime() - ticket.created_at.getTime();
+      updateData.resolution_time_minutes = Math.floor(diffMs / 60000);
+      updateData.cost_human = ((diffMs / 60000 / 60) * 15).toFixed(2);
+      updateData.cost_ia = 0.05;
     }
 
-    return this.prisma.ticket.update({ where: { id }, data: updateData });
+    const updated = await this.prisma.ticket.update({
+      where: { id },
+      data: updateData,
+    });
+
+      await this.prisma.auditLog.create({
+        data: {
+          ticket_id: id,
+          action: 'CAMBIO_ESTADO',
+          details: { estado_anterior: ticket.status, estado_nuevo: newStatus },
+        },
+      });
+
+    return updated;
   }
 
   async userAction(id: string, accion: string) {
+    if (accion !== 'CERRAR' && accion !== 'REENVIAR') {
+      throw new BadRequestException('Acción inválida. Use CERRAR o REENVIAR.');
+    }
+
     const ticket = await this.findOne(id);
 
     if (accion === 'CERRAR') {
       if (ticket.status === TicketStatus.CERRADO) {
-        throw new BadRequestException('El ticket ya esta cerrado');
+        throw new BadRequestException('El ticket ya está cerrado');
       }
       const resolved_at = new Date();
       const diffMs = resolved_at.getTime() - ticket.created_at.getTime();
@@ -165,9 +196,7 @@ export class TicketsService {
     const [totalTicketsHoy, mttrResult, costResult, distribucionPrioridad, feedbackTotal, feedbackCorrect] =
       await Promise.all([
         this.prisma.ticket.count({
-          where: {
-            created_at: { gte: today, lt: tomorrow },
-          },
+          where: { created_at: { gte: today, lt: tomorrow } },
         }),
         this.prisma.ticket.aggregate({
           _avg: { resolution_time_minutes: true },
@@ -178,9 +207,7 @@ export class TicketsService {
         }),
         this.prisma.ticket.aggregate({
           _avg: { cost_human: true, cost_ia: true },
-          where: {
-            status: { in: [TicketStatus.RESUELTO, TicketStatus.CERRADO] },
-          },
+          where: { status: { in: [TicketStatus.RESUELTO, TicketStatus.CERRADO] } },
         }),
         this.prisma.ticket.groupBy({
           by: ['priority'],
@@ -351,6 +378,60 @@ export class TicketsService {
         resolution_time_minutes: t.resolution_time_minutes,
         resolved_at: t.resolved_at,
       })),
+    };
+  }
+
+  async getPrecisionDetalle() {
+    const feedbackTotal = await this.prisma.iAFeedback.groupBy({
+      by: ['categoria_sugerida_por_ia'],
+      _count: { id: true },
+    });
+
+    const feedbackCorrect = await this.prisma.iAFeedback.groupBy({
+      by: ['categoria_sugerida_por_ia'],
+      where: { clasificacion_correcta: true },
+      _count: { id: true },
+    });
+
+    const feedbackUtil = await this.prisma.iAFeedback.groupBy({
+      by: ['categoria_sugerida_por_ia'],
+      where: { sugerencia_util: true },
+      _count: { id: true },
+    });
+
+    const correctMap = new Map(feedbackCorrect.map((r) => [r.categoria_sugerida_por_ia, r._count.id]));
+    const utilMap = new Map(feedbackUtil.map((r) => [r.categoria_sugerida_por_ia, r._count.id]));
+
+    const categorias = feedbackTotal.map((row) => {
+      const total = row._count.id;
+      const aciertos = correctMap.get(row.categoria_sugerida_por_ia) || 0;
+      const utiles = utilMap.get(row.categoria_sugerida_por_ia) || 0;
+      const precision = total > 0 ? aciertos / total : 0;
+      const utilidad = total > 0 ? utiles / total : 0;
+      return {
+        categoria: row.categoria_sugerida_por_ia,
+        precision: parseFloat(precision.toFixed(2)),
+        utilidad: parseFloat(utilidad.toFixed(2)),
+        total,
+        alerta: precision < 0.7,
+      };
+    });
+
+    let precisionGlobal = 0;
+    let utilidadGlobal = 0;
+    if (feedbackTotal.length > 0) {
+      const totalGlobal = feedbackTotal.reduce((s, r) => s + r._count.id, 0);
+      const aciertosGlobal = feedbackCorrect.reduce((s, r) => s + r._count.id, 0);
+      const utilesGlobal = feedbackUtil.reduce((s, r) => s + r._count.id, 0);
+      precisionGlobal = totalGlobal > 0 ? parseFloat((aciertosGlobal / totalGlobal).toFixed(2)) : 0;
+      utilidadGlobal = totalGlobal > 0 ? parseFloat((utilesGlobal / totalGlobal).toFixed(2)) : 0;
+    }
+
+    return {
+      precision_global: precisionGlobal,
+      utilidad_global: utilidadGlobal,
+      total_feedback: feedbackTotal.reduce((s, r) => s + r._count.id, 0),
+      categorias,
     };
   }
 

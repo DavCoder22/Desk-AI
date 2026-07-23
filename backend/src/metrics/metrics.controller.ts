@@ -24,4 +24,9 @@ export class MetricsController {
   getCobit() {
     return this.ticketsService.getCobitDss02();
   }
+
+  @Get('precision')
+  getPrecision() {
+    return this.ticketsService.getPrecisionDetalle();
+  }
 }

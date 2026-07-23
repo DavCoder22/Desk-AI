@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Loader2, CheckCircle, AlertCircle, Clock, HelpCircle } from 'lucide-react';
+import { Plus, Loader2, CheckCircle, AlertCircle, Clock, HelpCircle, Search, ServerOff } from 'lucide-react';
 import { NewTicketModal } from '@/components/NewTicketModal';
 import { AiAssistant } from '@/components/AiAssistant';
 
@@ -38,14 +38,19 @@ export default function PortalPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [showNewModal, setShowNewModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [miNombre, setMiNombre] = useState('');
 
   const fetchTickets = () => {
     setLoading(true);
+    setError('');
     fetch('/api/tickets')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Error ${r.status}: ${r.statusText}`);
+        return r.json();
+      })
       .then((data) => setTickets(Array.isArray(data) ? data : []))
-      .catch(() => {})
+      .catch((e) => setError(e.message || 'No se pudo conectar con el servidor'))
       .finally(() => setLoading(false));
   };
 
@@ -74,44 +79,54 @@ export default function PortalPage() {
         </button>
       </div>
 
+      {error && (
+        <div className="mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-start gap-3">
+          <ServerOff size={20} className="shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-red-700 dark:text-red-300">Error de conexión con el servidor</p>
+            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{error}</p>
+            <button onClick={fetchTickets} className="mt-2 text-xs text-red-700 dark:text-red-300 underline hover:no-underline">
+              Reintentar
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
         <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Ingresa tu nombre para ver tus solicitudes..."
+            placeholder="Filtrar por nombre de solicitante..."
             value={miNombre}
             onChange={(e) => setMiNombre(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            className="w-full pl-9 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           />
         </div>
-        {miNombre && (
-          <div className="flex gap-3 text-sm">
-            <span className="px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg font-medium">
-              {misTickets.length} solicitudes
-            </span>
-            <span className="px-3 py-2 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg font-medium">
-              {pendientes} pendientes
-            </span>
-            <span className="px-3 py-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg font-medium">
-              {resueltos} resueltos
-            </span>
-          </div>
-        )}
+        <div className="flex gap-3 text-sm">
+          <span className="px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg font-medium">
+            {misTickets.length} solicitudes
+          </span>
+          <span className="px-3 py-2 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg font-medium">
+            {pendientes} pendientes
+          </span>
+          <span className="px-3 py-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg font-medium">
+            {resueltos} resueltos
+          </span>
+        </div>
       </div>
 
-      {!miNombre ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-16 text-center transition-colors">
-          <HelpCircle size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-          <p className="text-gray-400 dark:text-gray-500 text-sm">Ingresa tu nombre para ver el estado de tus solicitudes</p>
-        </div>
-      ) : loading ? (
+      {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 size={28} className="animate-spin text-primary" />
-          <span className="ml-3 text-gray-400 dark:text-gray-500 text-sm">Cargando tus solicitudes...</span>
+          <span className="ml-3 text-gray-400 dark:text-gray-500 text-sm">Cargando solicitudes...</span>
         </div>
       ) : misTickets.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-16 text-center transition-colors">
-          <p className="text-gray-400 dark:text-gray-500 text-sm">No se encontraron solicitudes para &quot;{miNombre}&quot;</p>
+          <HelpCircle size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+          <p className="text-gray-400 dark:text-gray-500 text-sm">
+            {miNombre ? `No se encontraron solicitudes para "${miNombre}"` : 'No hay solicitudes registradas'}
+          </p>
           <button onClick={() => setShowNewModal(true)} className="mt-4 text-primary text-sm font-medium hover:underline">
             Crear primera solicitud
           </button>
@@ -147,8 +162,9 @@ export default function PortalPage() {
                     <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 line-clamp-2 group-hover:text-primary transition-colors">{t.title}</p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                       {new Date(t.created_at).toLocaleDateString('es-EC', { day: 'numeric', month: 'short' })}
-                      {' — '}{t.category}
+                      {' — '}{t.category.replace(/_/g, ' ')}
                     </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">Solicitante: {t.requester}</p>
                   </div>
 
                   <div className="flex items-center justify-between">

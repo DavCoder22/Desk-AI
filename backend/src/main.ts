@@ -12,7 +12,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableCors({
     origin: process.env.NODE_ENV === 'production'
-      ? (process.env.CORS_ORIGIN || 'https://tudominio.com')
+      ? (process.env.CORS_ORIGIN || '*')
       : '*',
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -21,7 +21,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false,
       transform: true,
       disableErrorMessages: process.env.NODE_ENV === 'production',
     }),

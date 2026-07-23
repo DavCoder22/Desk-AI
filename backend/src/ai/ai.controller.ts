@@ -66,7 +66,7 @@ Responde de forma clara, amigable y en espanol. Si el usuario pregunta sobre su 
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${config.apiKey}`,
-            ...(config.apiUrl.includes('openrouter') ? { 'HTTP-Referer': 'https://github.com/incident-manager', 'X-Title': 'DeskAI' } : {}),
+            ...(config.apiUrl.includes('openrouter') ? { 'HTTP-Referer': 'https://github.com/DavCoder22/Desk-AI', 'X-Title': 'DeskAI' } : {}),
           },
           body: JSON.stringify({
             model: config.model,

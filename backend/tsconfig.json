@@ -21,5 +21,6 @@
       "@/*": ["src/*"]
     }
   },
+  "include": ["src/**/*", "seed-standalone.ts"],
   "exclude": ["test", "dist", "node_modules"]
 }

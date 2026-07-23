@@ -105,8 +105,10 @@ export default function TicketDetailPage() {
 
   const cfg = statusCfg[ticket.status] || statusCfg.PENDIENTE_CLASIFICACION;
   const Icon = cfg.icon;
-  const isClosed = ticket.status === 'CERRADO' || ticket.status === 'RESUELTO';
+  const isClosed = ticket.status === 'CERRADO';
+  const isResuelto = ticket.status === 'RESUELTO';
   const isEnProgreso = ticket.status === 'EN_PROGRESO';
+  const canAct = !isClosed && !isEnProgreso;
 
   const contextForAI = `Ticket #${ticketId}: ${ticket.title} (${ticket.category} - ${ticket.status}). Solicitante: ${ticket.requester}.`;
 
@@ -191,7 +193,7 @@ export default function TicketDetailPage() {
             </p>
           )}
 
-          {!isClosed && !isEnProgreso && (
+          {canAct && (
             <div className="flex gap-3">
               <button
                 onClick={handleCerrar}
@@ -199,7 +201,7 @@ export default function TicketDetailPage() {
                 className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
               >
                 {accionando ? <Loader2 size={16} className="animate-spin" /> : <ThumbsUp size={16} />}
-                Resuelto — Cerrar ticket
+                {isResuelto ? 'Cerrar ticket' : 'Resuelto — Cerrar ticket'}
               </button>
               <button
                 onClick={handleReenviar}

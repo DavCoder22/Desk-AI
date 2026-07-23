@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { KPICard } from '@/components/KPICard';
 import { BarChartPrioridad } from '@/components/BarChartPrioridad';
 import { UltimosTickets } from '@/components/UltimosTickets';
-import { Clock, DollarSign, Shield, BrainCircuit } from 'lucide-react';
+import { Clock, DollarSign, Shield, BrainCircuit, Loader2, ServerOff } from 'lucide-react';
 
 interface KPI {
   total_tickets_hoy: number;
@@ -22,20 +22,50 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    setLoading(true);
+    setError('');
     Promise.all([
-      fetch('/api/dashboard/kpis').then((r) => r.json()),
-      fetch('/api/tickets').then((r) => r.json()),
+      fetch('/api/dashboard/kpis').then(async (r) => {
+        if (!r.ok) throw new Error('No se pudo cargar KPIs');
+        return r.json();
+      }),
+      fetch('/api/tickets').then(async (r) => {
+        if (!r.ok) throw new Error('No se pudo cargar tickets');
+        return r.json();
+      }),
     ])
       .then(([kpiData, ticketsData]) => {
         setKpi(kpiData);
         setTickets(Array.isArray(ticketsData) ? ticketsData : []);
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => setError(err.message || 'No se pudo conectar con el servidor'))
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-gray-400">Cargando dashboard...</div>;
-  if (error) return <div className="text-red-600">Error: {error}</div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-gray-400 gap-3">
+        <Loader2 size={28} className="animate-spin" />
+        <span>Cargando dashboard...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-6 flex items-start gap-4">
+        <ServerOff size={28} className="shrink-0 text-red-600 dark:text-red-400" />
+        <div>
+          <h2 className="text-base font-semibold text-red-700 dark:text-red-300">Error de conexión con el backend</h2>
+          <p className="text-sm text-red-600 dark:text-red-400 mt-1">{error}</p>
+          <p className="text-sm text-red-600 dark:text-red-400 mt-2">Asegúrate de que el backend esté corriendo en http://localhost:3000</p>
+          <button onClick={() => window.location.reload()} className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors">
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
   if (!kpi) return <div className="text-gray-400">Sin datos disponibles</div>;
 
   const quickLinks = [

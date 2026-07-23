@@ -4,13 +4,12 @@ title DeskAI - Backend
 
 echo ============================================
 echo  DeskAI - Gestion de Incidentes (Backend)
-echo  IA con deteccion automatica de proveedor
-echo  BD: Prisma Postgres (pooled.db.prisma.io)
+echo  Base de datos: SQLite (backend/prisma/dev.db)
 echo ============================================
 echo.
 
-:: ---- PASO 1: CONFIGURACION DE IA ----
-echo [Paso 1/4] Configuracion de IA...
+:: ---- PASO 1: VERIFICAR DEPENDENCIAS ----
+echo [Paso 1/4] Verificando dependencias...
 cd /d "%~dp0backend"
 
 where node >nul 2>nul
@@ -20,30 +19,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
-node setup-ai.js
-set AI_EXIT=%errorlevel%
-
-echo.
-echo --- Resultado de configuracion IA (codigo: %AI_EXIT%) ---
-echo   0 = IA configurada y operativa
-echo   1 = Usando clasificador local
-echo   2 = Salida del usuario
-echo.
-
-if "%AI_EXIT%"=="2" (
-    echo Saliendo por solicitud del usuario.
-    pause
-    exit /b 0
-)
-
-pause
-echo.
-
-:: ---- PASO 2: DEPENDENCIAS ----
-echo [Paso 2/4] Instalando dependencias del backend...
-cd /d "%~dp0backend"
-
 if not exist "node_modules" (
+    echo    Instalando dependencias del backend...
     call npm install
     if errorlevel 1 (
         echo ERROR: Fallo npm install.
@@ -51,31 +28,66 @@ if not exist "node_modules" (
         exit /b 1
     )
 ) else (
-    echo Dependencias ya instaladas.
-    call npm run prisma:generate
+    echo    Dependencias ya instaladas.
 )
 echo.
 
-:: ---- PASO 3: SINCORNIZAR ESQUEMA PRISMA ----
-echo [Paso 3/4] Sincronizando esquema con la base de datos...
+:: ---- PASO 2: CONFIGURACION DE IA ----
+echo [Paso 2/4] Verificando configuracion de IA...
+if not exist "ai-config.json" (
+    echo    No se encontro ai-config.json. Usando clasificador local de keywords.
+    echo    Para configurar IA remota ejecuta manualmente: cd backend && node setup-ai.js
+) else (
+    echo    ai-config.json encontrado. Si tiene API key valida se usara, sino clasificador local.
+)
+echo.
+
+:: ---- PASO 3: GENERAR PRISMA CLIENT Y CREAR BD ----
+echo [Paso 3/4] Preparando Prisma Client y base de datos SQLite...
 cd /d "%~dp0backend"
-call npx prisma db push
+
+if not exist "node_modules\.bin\prisma.cmd" (
+    echo ERROR: Prisma CLI no encontrado.
+    pause
+    exit /b 1
+)
+
+echo    - Generando Prisma Client...
+call node_modules\.bin\prisma.cmd generate
 if errorlevel 1 (
-    echo ERROR: Fallo la sincronizacion del esquema Prisma.
-    echo Verifica que DATABASE_URL en .env sea correcto.
+    echo ERROR: Fallo prisma generate.
+    pause
+    exit /b 1
+)
+
+echo    - Limpiando base de datos SQLite anterior...
+if exist "prisma\dev.db" del /Q "prisma\dev.db"
+if exist "prisma\dev.db-journal" del /Q "prisma\dev.db-journal"
+
+echo    - Creando tablas...
+call node_modules\.bin\prisma.cmd db push --accept-data-loss
+if errorlevel 1 (
+    echo ERROR: Fallo prisma db push.
     pause
     exit /b 1
 )
 echo.
 
-:: ---- PASO 4: INICIAR BACKEND ----
-echo [Paso 4/4] Iniciando servidor backend...
-echo.
-echo  El backend estara disponible en: http://localhost:3000
-echo  Presiona Ctrl+C para detenerlo.
+:: ---- PASO 4: SEMBRAR EJEMPLOS ----
+echo [Paso 4/4] Verificando datos de ejemplo...
+call npx ts-node seed-standalone.ts
+if errorlevel 1 (
+    echo    [i] Seed ya ejecutado o base con datos.
+)
 echo.
 
-cd /d "%~dp0backend"
+echo ============================================
+echo  Iniciando servidor backend...
+echo  http://localhost:3000
+echo  Presiona Ctrl+C para detenerlo
+echo ============================================
+echo.
+
 call npm run start:dev
 
 echo.

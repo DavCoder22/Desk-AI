@@ -3,171 +3,294 @@
 **Universidad Central del Ecuador**  
 **Estudiante:** David Malquin ([@DavCoder22](https://github.com/DavCoder22))  
 **Materia:** ESTRATEGIA, GESTIÓN Y ADQUISICIÓN EN LOS SISTEMAS  
+**Repositorio:** [github.com/DavCoder22/Desk-AI](https://github.com/DavCoder22/Desk-AI)
+
+---
+
+## API de DeskAI
+
+> **API REST desplegada en Render (gratuito):**  
+> 🔗 **https://desk-ai-577d.onrender.com**
+
+La API está disponible las 24 horas y se actualiza automáticamente al hacer push al repositorio. Puedes probar el CRUD completo directamente desde esa URL o con cualquier cliente HTTP (Postman, curl, etc.).
+
+### Endpoints de la API
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/health` | Estado del servidor y base de datos |
+| `GET` | `/api/tickets` | Listar todos los tickets |
+| `GET` | `/api/tickets/:id` | Obtener un ticket por ID |
+| `POST` | `/api/tickets` | Crear un nuevo ticket |
+| `PATCH` | `/api/tickets/:id/user-action` | Acción de usuario (CERRAR/REENVIAR) |
+| `GET` | `/api/ai/kpis` | KPIs del dashboard |
+| `POST` | `/api/ai/chat` | Chat con asistente IA |
+| `POST` | `/api/feedback` | Registrar feedback de clasificación IA |
+
+### Ejemplo con curl
+
+```bash
+# Verificar salud de la API
+curl https://desk-ai-577d.onrender.com/api/health
+
+# Listar tickets
+curl https://desk-ai-577d.onrender.com/api/tickets
+
+# Crear ticket
+curl -X POST https://desk-ai-577d.onrender.com/api/tickets \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Problema de prueba",
+    "description": "Test de conexión a la API",
+    "requester": "David Malquin",
+    "tipo_usuario": "ESTUDIANTE",
+    "category": "Académico - Estudiantes (SIIU)"
+  }'
+```
 
 ---
 
 ## Descripción
 
-DeskAI es un sistema inteligente de gestión de incidentes y solicitudes de servicio diseñado para la Mesa de Ayuda de la Universidad Central del Ecuador. Integra los marcos de referencia **ITIL** (Gestión de Incidentes), **COBIT DSS02** (Gestión de Servicios), **TCO** (Costo Total de Propiedad) y **BSC** (Balanced Scorecard) para ofrecer una solución completa de soporte TI.
-
-El sistema utiliza **inteligencia artificial** para clasificar automáticamente los tickets, recomendar procedimientos de resolución y proporcionar sugerencias tanto para agentes de soporte como para usuarios finales.
+DeskAI es un prototipo web inteligente de gestión de incidentes y solicitudes de servicio para la Mesa de Ayuda de la Universidad Central del Ecuador. Integra los marcos de referencia **ITIL**, **COBIT DSS02**, **TCO** y **BSC**, y utiliza inteligencia artificial (local o API externa) para clasificar tickets automáticamente y generar recomendaciones.
 
 ---
 
-## Funcionalidades
+## Funcionalidades principales
 
-### Portal de Usuario
-- Creación de solicitudes con clasificación automática por IA
-- Consulta de estado de tickets en tiempo real
-- Vista detallada de cada ticket con recomendaciones personalizadas
-- Acciones: cerrar ticket (solución aceptada) o reenviar (solución no funcionó)
-- Asistente virtual IA contextual para resolver dudas sobre el sistema
+### Portal de Usuario (`/portal`)
+- Ver todas tus solicitudes de soporte en tarjetas interactivas (sin necesidad de escribir tu nombre).
+- Filtrar solicitudes por nombre de solicitante.
+- Crear nuevas solicitudes con clasificación automática por IA.
+- Ver detalle de cada ticket: descripción, estado, prioridad, categoría y recomendación personalizada.
+- Cerrar ticket si la solución fue útil o reenviarlo si el problema persiste.
+- Asistente virtual IA flotante para resolver dudas.
 
-### Panel de Administración
-- Dashboard con KPIs: tickets hoy, MTTR, costo promedio, precisión de IA
-- Gestión completa de incidentes con transiciones de estado (ITIL)
-- Drawer de detalle con clasificación ITIL, sugerencias de resolución y métricas COBIT
-- Transiciones: Pendiente → Abierto → En Progreso → Resuelto → Cerrado
+### Panel de Administración (`/dashboard`)
+- Dashboard con KPIs: tickets de hoy, MTTR, costo promedio y precisión de IA.
+- Gestión de incidentes (ITIL).
+- Transiciones de estado: *Pendiente → Abierto → En Progreso → Resuelto → Cerrado*.
+- Métricas de desempeño: MTTR/Resolución, Costos (TCO), Cumplimiento COBIT DSS02, Precisión de IA.
 
-### Analítica y Métricas
-- **MTTR** (Mean Time To Resolve) por prioridad y categoría
-- **TCO** (Total Cost of Ownership): desglose costo humano vs. IA por ticket
-- **COBIT DSS02**: dashboard de cumplimiento de 5 objetivos de control
-- **Precisión de IA**: métricas de acierto por categoría con alertas visuales
+### Roles
+- **Admin:** acceso a Dashboard, Incidentes, Resolución, Costos, COBIT y Métricas IA.
+- **Usuario:** acceso al Portal de Usuario para crear y consultar sus tickets.
 
-### Inteligencia Artificial
-- Clasificación automática en 10 categorías del catálogo UCE
-- Perfiles de palabras clave con scoring local (fallback)
-- Integración con API externa (OpenAI / OpenRouter) cuando está configurada
-- Generación de recomendaciones estructuradas:
-  - **Agente:** procedimiento, escalamiento, referencia
-  - **Usuario:** qué hacer, dónde acudir, documentos necesarios
-  - **Supervisor:** nivel de escalamiento, prioridad COBIT, acciones de mejora
-
-### Experiencia de Usuario
-- Diseño responsive (móvil y escritorio)
-- Modo oscuro / claro
-- Roles de usuario (Admin / Usuario) con navegación adaptativa
-- Validaciones robustas en todos los formularios
-- Asistente virtual flotante contextual
+Puedes cambiar de rol con el botón de la esquina superior derecha (**Admin** / **Usuario**).
 
 ---
 
 ## Arquitectura
 
-```
-┌─────────────────────┐      ┌──────────────────────┐
-│   Frontend (Next.js)│ ───→ │  Backend (NestJS)     │
-│   Puerto 3001       │      │  Puerto 3000          │
-│                     │      │                       │
-│   - Portal Usuario  │ API  │  - Tickets API        │
-│   - Dashboard Admin │      │  - Clasificación IA   │
-│   - Métricas        │      │  - Feedback Loop      │
-│   - Asistente IA    │      │  - Health Check       │
-└─────────────────────┘      └──────────┬────────────┘
-                                        │
-                              ┌─────────▼─────────┐
-                              │   PostgreSQL        │
-                              │   (Prisma ORM)      │
-                              └───────────────────┘
+```text
+Frontend (Next.js)  →  Backend (NestJS)  →  SQLite (Prisma)
+   localhost:3001          localhost:3000     backend/prisma/dev.db
 ```
 
----
-
-## Stack Tecnológico
-
-| Capa       | Tecnología                          |
-|------------|-------------------------------------|
-| Frontend   | Next.js 14, React 18, Tailwind CSS  |
-| Backend    | NestJS 10, TypeScript               |
-| Base de datos | PostgreSQL + Prisma ORM            |
-| IA         | Clasificador local (keywords) + API externa (OpenAI/OpenRouter) |
-| Charts     | Recharts                            |
-| Notificaciones | react-hot-toast                  |
+| Capa       | Tecnología                           |
+|------------|--------------------------------------|
+| Frontend   | Next.js 14, React 18, Tailwind CSS   |
+| Backend    | NestJS 10, TypeScript                |
+| Base de datos | SQLite con Prisma ORM             |
+| IA         | Clasificador local o API externa (OpenRouter/Groq) |
+| Gráficos   | Recharts                             |
 
 ---
 
-## Cobertura del Trabajo
+## Requisitos
 
-Este proyecto cubre los siguientes aspectos de la materia **ESTRATEGIA, GESTIÓN Y ADQUISICIÓN EN LOS SISTEMAS**:
+- [Node.js](https://nodejs.org/) 18 o superior
 
-1. **ITIL — Gestión de Incidentes**
-   - Ciclo de vida completo del incidente (detección, registro, clasificación, diagnóstico, resolución, cierre)
-   - Matriz de prioridad (Impacto × Urgencia)
-   - Categorización y subcategorización según catálogo UCE
-   - SLA/OLAs implícitos en las transiciones de estado
-
-2. **COBIT DSS02 — Gestión de Solicitudes y Servicios**
-   - DSS02.01: Definir esquema de clasificación de incidentes
-   - DSS02.02: Registrar y priorizar incidentes
-   - DSS02.03: Diagnosticar y escalar incidentes
-   - DSS02.04: Resolver y recuperar el servicio
-   - DSS02.05: Cerrar incidentes y evaluar
-   - Dashboard de cumplimiento con indicadores por objetivo de control
-
-3. **TCO — Costo Total de Propiedad**
-   - Costeo por ticket: costo humano ($15/hora) + costo IA ($0.05/ticket)
-   - Desglose por ticket y agregado
-   - Proyección de costo anual estimado
-
-4. **BSC — Balanced Scorecard**
-   - MTTR como KPI principal de eficiencia
-   - Precisión de IA como indicador de calidad
-   - Distribución de prioridades como métrica operativa
-   - Tasa de resolución como indicador de cumplimiento
-
-5. **Inteligencia Artificial aplicada a Gestión de Servicios**
-   - Clasificación automática con reglas de negocio UCE
-   - Recomendaciones contextuales estructuradas
-   - Asistente virtual para usuarios finales
-   - Feedback loop para mejora continua de precisión
-   - Sistema de alertas cuando la precisión cae bajo 70%
+No se requiere PostgreSQL; el proyecto usa **SQLite** para facilitar las pruebas locales.
 
 ---
 
-## Instalación y Despliegue
+## Cómo ejecutar el proyecto
 
-### Requisitos
-- Node.js 18+
-- PostgreSQL
+Opción recomendada en Windows: usa los archivos `.bat` incluidos.
 
-### Desarrollo
+### Opción 1: archivos `.bat` (recomendado)
 
+1. Abre una terminal CMD en la carpeta raíz del proyecto.
+2. Ejecuta el backend:
+   ```cmd
+   backend.bat
+   ```
+   El script:
+   - Instala dependencias si faltan.
+   - Genera el cliente Prisma.
+   - Crea / regenera la base de datos SQLite.
+   - Siembra 10 tickets de ejemplo.
+   - Inicia el backend en `http://localhost:3000`.
+3. Abre **otra** terminal CMD en la misma carpeta.
+4. Ejecuta el frontend:
+   ```cmd
+   frontend.bat
+   ```
+   El script:
+   - Instala dependencias si faltan.
+   - Inicia el frontend en `http://localhost:3001`.
+5. Abre en tu navegador: `http://localhost:3001/portal`
+
+### Opción 2: comandos manuales
+
+Backend:
 ```bash
-# Backend
 cd backend
 npm install
-npm run start:dev    # http://localhost:3000
+npx prisma generate
+npx prisma db push --accept-data-loss
+npx ts-node seed-standalone.ts
+npm run start:dev
+```
 
-# Frontend
+Frontend (en otra terminal):
+```bash
 cd frontend
 npm install
-npm run dev          # http://localhost:3001
+npm run dev
 ```
 
-### Producción
+Después abre `http://localhost:3001`.
 
-```bash
-# Build ambos proyectos
-npm run build
+### Opción 3: inicio limpio (reinstala todo)
 
-# O usando el script de despliegue
-.\deploy.ps1 -Mode all
-```
-
-Variables de entorno (`.env` en backend):
-
-```
-DATABASE_URL="postgresql://..."
-PORT=3000
-NODE_ENV=production
-CORS_ORIGIN=https://tudominio.com
+```cmd
+clean-start-all.bat
 ```
 
 ---
 
-## Licencia
+## Guía rápida del prototipo web
 
-Proyecto académico — Universidad Central del Ecuador  
-**Repositorio:** [github.com/DavCoder22/Desk-AI](https://github.com/DavCoder22/Desk-AI)  
-**Autor:** [David Malquin (DavCoder22)](https://github.com/DavCoder22)
+| Vista | Ruta | Para qué sirve |
+|-------|------|----------------|
+| **Portal de Usuario** | `/portal` | Crear y revisar tus solicitudes |
+| **Dashboard** | `/dashboard` | KPIs generales para administradores |
+| **Incidentes** | `/tickets` | Listado y administración de tickets |
+| **Resolución** | `/resolucion` | Métricas MTTR por prioridad y categoría |
+| **Costos** | `/costos` | Análisis de costos TCO |
+| **COBIT** | `/cobit` | Cumplimiento de objetivos DSS02 |
+| **Métrica IA** | `/metrica-ia` | Precisión del clasificador IA |
+
+### Crear una solicitud
+1. Ve a `http://localhost:3001/portal`.
+2. Haz clic en **Nueva Solicitud**.
+3. Completa título, descripción, tipo de usuario, facultad/carrera (opcional) y tu nombre.
+4. El sistema clasifica automáticamente el ticket.
+
+### Consultar el estado
+- En `/portal` aparecen todos los tickets de ejemplo.
+- Escribe un nombre en el filtro para buscar tickets específicos.
+- Haz clic en una tarjeta para ver el detalle completo.
+
+### Cambiar de rol
+- Usa el botón **Admin** / **Usuario** en la esquina superior derecha.
+- El Admin accede al dashboard y gestión; el Usuario va directamente al portal.
+
+---
+
+## Configuración de IA (opcional)
+
+Por defecto el sistema usa un **clasificador local por keywords**. Para usar un modelo remoto (OpenRouter):
+
+```bash
+cd backend
+node setup-ai.js
+```
+
+Introduce tu API key cuando se solicite. El script detecta automáticamente el proveedor y guarda la configuración en `backend/ai-config.json`.
+
+---
+
+## Scripts útiles
+
+| Script | Descripción |
+|--------|-------------|
+| `backend.bat` | Inicia el backend completo (dependencias, Prisma, seed, servidor) |
+| `frontend.bat` | Inicia el frontend en modo desarrollo |
+| `seed.bat` | Regenera Prisma y siembra tickets de ejemplo |
+| `clean-start-all.bat` | Limpieza total: borra caches, reinstala, compila e inicia todo |
+| `kill-all.bat` | Mata procesos Node/PowerShell atascados |
+
+---
+
+## Estructura del repositorio
+
+```text
+Desk-AI/
+├── backend/              # API NestJS + Prisma + IA
+│   ├── prisma/           # Esquema de SQLite
+│   ├── src/              # Código fuente del backend
+│   └── seed-standalone.ts # Script para sembrar datos de ejemplo
+├── frontend/             # Aplicación Next.js
+│   └── src/
+│       ├── app/          # Páginas (portal, dashboard, tickets, etc.)
+│       └── components/   # Componentes reutilizables
+├── INFORME-DESKAI.md     # Informe académico
+└── README.md             # Este archivo
+```
+
+---
+
+## Estructura del repositorio
+
+```text
+Desk-AI/
+├── backend/              # API NestJS + Prisma + IA
+│   ├── prisma/           # Esquemas de base de datos
+│   │   ├── schema.prisma       # SQLite (desarrollo local)
+│   │   └── render-schema.prisma # PostgreSQL (Render)
+│   ├── src/              # Código fuente del backend
+│   └── seed-standalone.ts # Script para sembrar datos de ejemplo
+├── frontend/             # Aplicación Next.js
+│   └── src/
+│       ├── app/          # Páginas (portal, dashboard, tickets, etc.)
+│       └── components/   # Componentes reutilizables
+├── render.yaml           # Blueprint de despliegue en Render
+├── INFORME-DESKAI.md     # Informe académico
+└── README.md             # Este archivo
+```
+
+---
+
+## Despliegue en Render (API)
+
+La API ya está desplegada gratuitamente en Render: **https://desk-ai-577d.onrender.com**
+
+### Configuración del servicio en Render
+
+El servicio usa **Render Blueprint** (`render.yaml`). Para recrear o configurar:
+
+1. Ve a [dashboard.render.com](https://dashboard.render.com)
+2. **New** → **Blueprint** → selecciona el repositorio `DavCoder22/Desk-AI`
+3. Render detecta `render.yaml` y crea automáticamente:
+   - Base de datos PostgreSQL gratuita (`deskai-db`)
+   - Servicio web (`deskai-api`)
+4. Espera ~3-5 min para el primer build
+
+### Configuración manual (si ya tienes el servicio creado)
+
+En tu servicio existente, ve a **Settings** y configura:
+
+- **Build Command:**
+  ```
+  cd backend && cp prisma/render-schema.prisma prisma/schema.prisma && npm install && npx prisma generate && npx nest build
+  ```
+- **Start Command:**
+  ```
+  cd backend && npx prisma db push --accept-data-loss --skip-generate && npx ts-node seed-standalone.ts && node dist/main
+  ```
+- **Environment Variables:**
+  - `DATABASE_URL` = URL de tu base de datos PostgreSQL (desde Render → Databases → Internal Database URL)
+  - `NODE_ENV` = `production`
+  - `PORT` = `10000`
+
+> **Nota:** Render free tier se duerme tras 15 min de inactivity. El primer request tarda ~30s en despertar.
+
+---
+
+## Autoría
+
+**David Malquin** — [@DavCoder22](https://github.com/DavCoder22)  
+Proyecto académico — Universidad Central del Ecuador

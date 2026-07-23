@@ -127,7 +127,7 @@ export class AiApiClient {
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.1,
-      max_tokens: 600,
+      max_tokens: 1000,
     };
 
     try {
@@ -137,7 +137,7 @@ export class AiApiClient {
       };
 
       if (this.config!.apiUrl.includes('openrouter')) {
-        headers['HTTP-Referer'] = 'https://github.com/incident-manager';
+        headers['HTTP-Referer'] = 'https://github.com/DavCoder22/Desk-AI';
         headers['X-Title'] = 'DeskAI';
       }
 
